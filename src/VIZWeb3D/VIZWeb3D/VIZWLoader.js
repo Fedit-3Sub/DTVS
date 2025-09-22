@@ -311,541 +311,25 @@ define(
                         tocPos: null //8
                     };
 
-                    var buffer = new Uint8Array(result, offset, 16);
-                    //header.typeStr = String.fromCharCode.apply(null, buffer);
-                    //offset += 16;
                     header.version = dataView.getInt32(offset, true);
                     offset += 4;
 
-                    let structureCnt = dataView.getInt32(offset, true);
-                    offset += 4;
+                    function ImportStructure(view, offset) {
 
-                    header.sizeTocItem = dataView.getInt32(offset, true);
-                    offset += 4;
-                    header.nToc = dataView.getInt32(offset, true);
-                    offset += 4;
-
-                    header.tocPos = getUint64(dataView, offset, true);
-                    offset += 8;
-
-                    var m_toc = [];
-                    
-                    // read toc
-                    var nTocOfThisSeg = 0;
-                    var nextPos = 0;
-                    var m_StreamCurrentPosition = header.tocPos;
-
-                    nTocOfThisSeg = dataView.getInt32(m_StreamCurrentPosition, true);
-                    m_StreamCurrentPosition += 4;
-                    nextPos = getUint64(dataView, m_StreamCurrentPosition, true);
-                    m_StreamCurrentPosition += 8;
-                    var m_curTocIdx = header.nToc - 1;
-                    //for (var i = 1; i <= nTocOfThisSeg; i++) {
-                    //    ReadTocItem(header.nToc - i);
-                    //}
-                    for (var i = 0; i < nTocOfThisSeg; i++) {
-                        ReadTocItem(i);
-                    }
-
-                    function ReadTocItem(tocIdx) {
-                        var itemPos = header.tocPos + 12 + (tocIdx * header.sizeTocItem);
-
-                        // Core에서 8ㅠyte로 써짐 뒤 4byte는 더미데이터
-                        var type = dataView.getInt32(itemPos, true);
-                        itemPos += 8;
-                        var position = getUint64(dataView, itemPos, true);
-                        itemPos += 8;
-                        var dataSize = dataView.getUint32(itemPos, true);
-                        itemPos += 4;
-                        var uncompSize = dataView.getUint32(itemPos, true);
-                        itemPos += 4;
-                        var parsetype = 0;
-                        if (scope.Parse.parsetype === 1) {
-                            parsetype = dataView.getUint32(itemPos, true);
-                            itemPos += 4;
-                        }
-
-                        var toc = {
-                            type: type,
-                            position: position,
-                            datasize: dataSize,
-                            uncompsize: uncompSize,
-                            parsetype: parsetype
+                        var decode_utf8 = function (s) {
+                            return decodeURIComponent(escape(s));
                         };
-                        m_toc.push(toc);
-                    }
 
-                    function FindLast(ctt) {
-                        var tocIdx = -1;
-                        for (var i = m_toc.length - 1; i >= 0; i--) {
-                            if (m_toc[i].type === ctt) {
-                                tocIdx = i;
-                                break;
-                            }
-                        }
-                        return tocIdx;
-                    }
-
-                    function FindFirst(ctt) {
-                        var tocIdx = -1;
-                        for (var i = 0; i < m_toc.length; i++) {
-                            if (m_toc[i].type === ctt) {
-                                tocIdx = i;
-                                break;
-                            }
-                        }
-                        return tocIdx;
-                    }
-
-                    // MeshData
-                    function ReadDataBlock(ti, buffer) {
-                        try {
-                            var m_StreamCurrentPosition = ti.position;
-                            var view;
-                            if (buffer === undefined) {
-                                view = new DataView(result, m_StreamCurrentPosition, ti.datasize);
-                                return view;
-                            }
-                            else {
-                                view = new DataView(buffer, m_StreamCurrentPosition, ti.datasize);
-                                return view;
-                            }
-
-                        } catch (e) {
-                            return undefined;
-                        }
-                    }
-
-                    //var ti = FindLast(3);
-                    var ti = FindLast(ContentsType.CTMeshBlock);
-                    var tocData = m_toc[ti];
-
-                    //var view = ReadDataBlock(tocData);
-
-                    //offset = 0;
-                    //var meshBlockNum = view.getInt32(offset, true);
-                    //offset += 4;
-
-                    //var curload = 0;
-                    //var loading = function () {
-                    //    for (var i = curload; i < meshBlockNum; i++) {
-                    //        var percent = curload / meshBlockNum;
-                    //        if (percent === Infinity)
-                    //            percent = 0;
-                    //        //onProgress(1, percent);
-                    //        console.log("ReadMeshBlock : " + i);
-                    //        var cachTocIdx = 0;
-                    //        cachTocIdx = view.getInt32(offset, true);
-                    //        offset += 4;
-
-                    //        //var tocIdx = FindToc(ContentsType.CTMeshBlockSub, cachTocIdx);//FindLast(22);
-                    //        //toc = m_toc[tocIdx];
-                    //        toc = m_toc[cachTocIdx];
-                    //        //toc = FindTocItem(cachTocIdx);
-
-                    //        var viewSub = ReadDataBlock(toc);
-
-                    //        ImportMeshBlock(viewSub, cachTocIdx);
-                    //        curload++;
-                    //        if (curload !== meshBlockNum) {
-                    //            setTimeout(function () {
-                    //                onProgress(1, percent);
-                    //                loading();
-                    //            }, 25);
-                    //            break;
-                    //        }
-                    //        else {
-                    //            setTimeout(function () {
-                    //                onProgress(1, 1);
-                    //                result = null;
-
-                    //                if (tocStructure === undefined) {
-                    //                    setTimeout(function () {
-                    //                        parseOnload(group, data);
-                    //                    }, 25);
-                    //                }
-                    //                else {
-                    //                    setTimeout(function () {
-                    //                        ImportStructure(viewStructure, tocStructure);
-
-                    //                        if (tocPropertyIndices === undefined) {
-                    //                            setTimeout(function () {
-                    //                                parseOnload(group, data);
-                    //                            }, 25);
-                    //                        }
-                    //                        else {
-                    //                            setTimeout(function () {
-                    //                                LoadPropTableIndices(viewPropertyIndices, tocPropertyIndices);
-                    //                            }, 25);
-                    //                        }
-
-                    //                    }, 25);
-                    //                }
-                    //            }, 25);
-                    //        }
-                    //    }
-                    //};
-
-                    //setTimeout(function () {
-                    //    onProgress(1, 0);
-                    //    loading();
-                    //}, 25);
-                    //var cntTriAll = 0;
-                    function ImportMeshBlock(view, tiStruct) {
-                        //var vnElemsSize = 15;
-                        //var triElemsSize = 2 * 3;
-                        var meshoffset = 0;
-                        var MeshBlockSize;
-                        MeshBlockSize = view.getInt32(meshoffset, true);
-                        meshoffset += 4;
-
-                        for (var i = 0; i < MeshBlockSize; i++) {
-                            var color = {
-                                R: view.getUint8(meshoffset, true),
-                                G: view.getUint8(meshoffset + 1, true),
-                                B: view.getUint8(meshoffset + 2, true),
-                                A: view.getUint8(meshoffset + 3, true)
-                            };
-                            meshoffset += 4;
-                            var nVtx = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-                            var nNormal = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-                            var nTri = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-                            //cntTriAll += nTri;
-                            if (scope.Parse.parsetype === 1) {
-                                var ptype = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-                            }
-
-                            var cnt = nVtx / 15;
-                            //var cntTri = nTri / 12;
-                            //var buffpos = new Float32Array(cnt * 3);
-                            //var buffnormal = new Float32Array(cnt * 3);
-                            //var buffindex = [];//new Int32Array(cntTri * 3);
-
-                            //var offsetV = meshoffset;
-
-                            //var tmpdata = dataView.getFloat32(meshoffset + view.byteOffset, true);
-                            var vtArray = new Float32Array(result, meshoffset + view.byteOffset, nVtx);
-
-                            meshoffset += nVtx * 4;
-                            //tmpdata = dataView.getUint16(meshoffset + view.byteOffset, true);
-                            //var vnArray = new Uint16Array(result, meshoffset + view.byteOffset, nNormal);
-                            //meshoffset += nNormal * 2;
-                            var vnArray = new Float32Array(result, meshoffset + view.byteOffset, nNormal);
-                            meshoffset += nNormal * 4;
-                            //var triArray = new Uint16Array(result, meshoffset + view.byteOffset, nTri);
-                            //meshoffset += nTri * 2;
-                            var triArray = new Uint32Array(result, meshoffset + view.byteOffset, nTri);
-                            meshoffset += nTri * 4;
-
-                            //var info = {
-                            //    fc: {
-                            //        hasVertNormal: 1,
-                            //        normalType: 0,
-                            //        vertexType: 2,
-                            //    }
-                            //};
-
-                            //function GetTypeSize(mtTypeId) {
-                            //    var sz = 1;
-                            //    return sz << mtTypeId;
-                            //}
-
-                            var geometry = new THREE.BufferGeometry();
-                            geometry.setIndex(new THREE.Uint32BufferAttribute(triArray, 1));
-                            geometry.addAttribute('position', new THREE.Float32BufferAttribute(vtArray, 3));
-                            geometry.addAttribute('normal', new THREE.Float32BufferAttribute(vnArray, 3));
-
-                            var count = vtArray.length / 3 * 4;
-                            var colors = [];
-                            for (var k = 0; k < count; k = k + 4) {
-
-                                colors.push(color.R);
-                                colors.push(color.G);
-                                colors.push(color.B);
-                                colors.push(color.A);
-                            }
-                            var colorAttribute = new THREE.Uint8BufferAttribute(colors, 4);
-                            colorAttribute.normalized = true;
-                            geometry.addAttribute('color', colorAttribute);
-
-                            geometry.computeBoundingSphere();
-
-                            var colorTmp = RGB2HEX(color.R, color.G, color.B);
-                            //var material = new THREE.MeshPhongMaterial({
-                            //    //color: colorTmp,
-                            //    side: THREE.DoubleSide,
-                            //    transparent: true,
-                            //    //vertexColors: THREE.NoColors,
-                            //    vertexColors: THREE.VertexColors,
-                            //    opacity: color.A / 255,
-                            //    shininess: 100,
-                            //});
-
-                            //var vEye = new THREE.Vector3(0.0, 0.0, 10.0).multiplyScalar(10000); //* 모델 반지름
-                            //var vLight = new THREE.Vector3(200.0, 500.0, 1000.0).multiplyScalar(10000 * 300);// * 모델 반지름 * 300
-
-                            //datamng.Shader.uniforms['vEye'].value = vEye;
-                            //datamng.Shader.uniforms['vLight'].value = vLight;
-
-                            //var material = new THREE.ShaderMaterial({//new THREE.RawShaderMaterial({
-                            //    derivatives: datamng.Shader.derivatives,
-                            //    uniforms: datamng.Shader.uniforms,
-                            //    vertexShader: datamng.Shader.vertex,//document.getElementById('vertexShader').textContent,//datamng.Shader.vertex,
-                            //    fragmentShader: datamng.Shader.fragment,//document.getElementById('fragmentShader').textContent,//datamng.Shader.fragment,
-                            //    side: THREE.DoubleSide,
-                            //    transparent: true,
-                            //    flatShading: false,
-                            //    clipping: true,
-                            //    clippingPlanes: [],
-                            //});
-
-                            
-                            mesh = new THREE.Mesh(geometry, datamng.Materials.basic);
-                            //mesh = new THREE.Mesh(geometry, datamng.Materials.SSAO);
-                            mesh.castShadow = true;
-                            mesh.receiveShadow = true;
-
-                            object.add(mesh);
-
-                            var MeshSize = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-                            var datas = [];
-                            for (var j = 0; j < MeshSize; j++) {
-                                var partid = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-                                var bodyid = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-                                var m_vnIdx = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-                                var m_triIdx = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-
-                                var MnVtx = view.getUint16(meshoffset, true);
-                                meshoffset += 2;
-                                var MnTri = view.getUint16(meshoffset, true);
-                                meshoffset += 2;
-
-                                var bbox = new Float32Array(view.buffer, meshoffset + view.byteOffset, 6);
-                                meshoffset += 24;
-                                if (bodyid === 90360)
-                                    console.log("");
-                                var data = {
-                                    partId: partid + datamng.GetMaxID(),
-                                    bodyId: bodyid + datamng.GetMaxID(),
-                                    color: color,
-                                    //m_vnIdx: m_vnIdx / 15 * 3,
-                                    //m_triIdx: m_triIdx / 6 * 3,
-                                    m_vnIdx: m_vnIdx * 3,
-                                    m_triIdx: m_triIdx * 3,
-                                    m_nVtx: MnVtx * 3,
-                                    m_nTris: MnTri * 3,
-                                    //m_nVtx: MnVtx,
-                                    //m_nTris: MnTri,
-                                    BBox: {
-                                        min: {
-                                            x: bbox[0],
-                                            y: bbox[1],
-                                            z: bbox[2]
-                                        },
-                                        max: {
-                                            x: bbox[3],
-                                            y: bbox[4],
-                                            z: bbox[5]
-                                        }
-                                    },
-                                    Tag: datamng.Tag()
-                                    //mesh: mesh
-                                };
-
-                                datas.push(data);
-                            }
-
-                            mesh.userData = datas;
-                        }
-                    }
-
-                    function ImportMeshBlock_body(view, tiStruct) {
-                        var meshoffset = 0;
-                        var MeshBlockSize;
-                        MeshBlockSize = view.getInt32(meshoffset, true);
-                        meshoffset += 4;
-
-                        for (var i = 0; i < MeshBlockSize; i++) {
-                            var color = {
-                                R: view.getUint8(meshoffset, true),
-                                G: view.getUint8(meshoffset + 1, true),
-                                B: view.getUint8(meshoffset + 2, true),
-                                A: view.getUint8(meshoffset + 3, true)
-                            };
-                            meshoffset += 4;
-                            var nVtx = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-                            var nNormal = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-                            var nTri = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-
-                            if (scope.Parse.parsetype === 1) {
-                                var ptype = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-                            }
-
-                            var vtArray = new Float32Array(result, meshoffset + view.byteOffset, nVtx);
-                            meshoffset += nVtx * 4;
-                            var vnArray = new Float32Array(result, meshoffset + view.byteOffset, nNormal);
-                            meshoffset += nNormal * 4;
-                            var triArray = new Uint32Array(result, meshoffset + view.byteOffset, nTri);
-                            meshoffset += nTri * 4;
-                            
-                            //var geometry = new THREE.BufferGeometry();
-                            //geometry.setIndex(new THREE.Uint32BufferAttribute(triArray, 1));
-                            //geometry.addAttribute('position', new THREE.Float32BufferAttribute(vtArray, 3));
-                            //geometry.addAttribute('normal', new THREE.Float32BufferAttribute(vnArray, 3));
-
-                            //var count = vtArray.length / 3 * 4;
-                            //var colors = [];
-                            //for (var k = 0; k < count; k = k + 4) {
-
-                            //    colors.push(color.R);
-                            //    colors.push(color.G);
-                            //    colors.push(color.B);
-                            //    colors.push(color.A);
-                            //}
-                            //var colorAttribute = new THREE.Uint8BufferAttribute(colors, 4);
-                            //colorAttribute.normalized = true;
-                            //geometry.addAttribute('color', colorAttribute);
-
-                            //geometry.computeBoundingSphere();
-
-                            //mesh = new THREE.Mesh(geometry, datamng.Materials.basic);
-                            //mesh.castShadow = true;
-                            //mesh.receiveShadow = true;
-
-                            //object.add(mesh);
-
-                            var MeshSize = view.getUint32(meshoffset, true);
-                            meshoffset += 4;
-                            //var datas = [];
-                            for (var j = 0; j < MeshSize; j++) {
-                                var datas = [];
-                                var partid = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-                                var bodyid = view.getUint32(meshoffset, true);
-                                if (bodyid === 90360)
-                                    console.log("");
-                                meshoffset += 4;
-                                var m_vnIdx = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-                                var m_triIdx = view.getUint32(meshoffset, true);
-                                meshoffset += 4;
-
-                                var MnVtx = view.getUint16(meshoffset, true);
-                                meshoffset += 2;
-                                var MnTri = view.getUint16(meshoffset, true);
-                                meshoffset += 2;
-
-                                var bbox = new Float32Array(view.buffer, meshoffset + view.byteOffset, 6);
-                                meshoffset += 24;
-
-                                var data = {
-                                    partId: partid + datamng.GetMaxID(),
-                                    bodyId: bodyid + datamng.GetMaxID(),
-                                    color: color,
-                                    //m_vnIdx: m_vnIdx / 15 * 3,
-                                    //m_triIdx: m_triIdx / 6 * 3,
-                                    m_vnIdx: m_vnIdx * 3,
-                                    m_triIdx: m_triIdx * 3,
-                                    m_nVtx: MnVtx * 3,
-                                    m_nTris: MnTri * 3,
-                                    //m_nVtx: MnVtx,
-                                    //m_nTris: MnTri,
-                                    BBox: {
-                                        min: {
-                                            x: bbox[0],
-                                            y: bbox[1],
-                                            z: bbox[2]
-                                        },
-                                        max: {
-                                            x: bbox[3],
-                                            y: bbox[4],
-                                            z: bbox[5]
-                                        }
-                                    },
-                                    Tag: datamng.Tag()
-                                    //mesh: mesh
-                                };
-
-                                // 데이터 추출
-                                var indexes = triArray.slice(data.m_triIdx, data.m_triIdx + data.m_nTris);
-                                
-                                for (var idx = 0; idx < indexes.length; idx++) {
-                                    indexes[idx] = indexes[idx] - data.m_vnIdx / 3;
-                                }
-                                var positions = vtArray.slice(data.m_vnIdx, data.m_vnIdx + data.m_nVtx);
-                                var normals = vnArray.slice(data.m_vnIdx, data.m_vnIdx + data.m_nVtx);
-
-                                data.m_triIdx = 0;
-                                data.m_vnIdx = 0;
-
-                                var geometry = new THREE.BufferGeometry();
-                                geometry.setIndex(new THREE.Uint32BufferAttribute(indexes, 1));
-                                geometry.addAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-                                geometry.addAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-
-                                var count = positions.length / 3 * 4;
-                                var colors = [];
-                                for (var k = 0; k < count; k = k + 4) {
-                                    colors.push(color.R);
-                                    colors.push(color.G);
-                                    colors.push(color.B);
-                                    colors.push(color.A);
-                                }
-                                var colorAttribute = new THREE.Uint8BufferAttribute(colors, 4);
-                                colorAttribute.normalized = true;
-                                geometry.addAttribute('color', colorAttribute);
-                                geometry.computeBoundingSphere();
-
-                                mesh = new THREE.Mesh(geometry, datamng.Materials.basic);
-                                mesh.castShadow = true;
-                                mesh.receiveShadow = true;
-
-                                object.add(mesh);
-
-                                datas.push(data);
-                                mesh.userData = datas;
-                            }
-
-                            //mesh.userData = datas;
-                        }
-                    }
-
-                    // tree
-                    var tiStructure = FindLast(ContentsType.CTStructure);
-                    var tocStructure = m_toc[tiStructure];
-                    //if (tocStructure === undefined) {
-                    //    setTimeout(function () {
-                    //                    parseOnload(group, data);
-                    //                }, 25);
-                    //    return;
-                    //}
-                    var viewStructure = ReadDataBlock(tocStructure);
-                    //setTimeout(function () { ImportStructure(viewStructure, tocStructure); }, 25);
-                    let reviews = [];
-                    function ImportStructure(view, toc) {
-                        var offset = 0;
-                        var m_Unit = view.getUint32(offset, true);
+                        let structureCnt = view.getUint32(offset, true);
                         offset += 4;
-                        var nEnts = view.getUint32(offset, true);
-                        offset += 4;
-                        var vdBlockSize = view.getUint32(offset, true);
-                        offset += 4;
+    
+                        let m_mapPropList = new Map();
+                        let m_mapMeshList = new Map();
 
-                        var m_vecPropHeaderDic = []; // 136 Byte
-                        for (var i = 0; i < vdBlockSize; i++) {
+                        let m_vecPropHeaderDic = [];
+                        
+                        for(let si = 0 ; si < structureCnt ; si++)
+                        {
                             HeaderTocTableItem = {
                                 index: -1,
                                 type: 0,
@@ -863,523 +347,410 @@ define(
                                 name : null
                             };
 
-                            var index = view.getUint32(offset, true);
-                            HeaderTocTableItem.index = index === -1 ? index : index + datamng.GetMaxID();
+                            let pIndex = view.getUint32(offset, true);
                             offset += 4;
-                            HeaderTocTableItem.type = view.getInt32(offset, true);
+                            if(pIndex === 0) pIndex = -1;
+                            
+                            let pType = view.getUint32(offset, true);
                             offset += 4;
-                            HeaderTocTableItem.entFlags = view.getUint16(offset, true);
+
+                            let index = view.getUint32(offset, true);
                             offset += 4;
-                            HeaderTocTableItem.iNameIndex = view.getInt32(offset, true);
+
+                            let nodeType = view.getUint32(offset, true);
                             offset += 4;
-                            HeaderTocTableItem.attFlags = view.getUint16(offset, true);
+                            
+                            let nameLength = view.getUint32(offset, true);
                             offset += 4;
-                            HeaderTocTableItem.transfrom = [];
-                            for (var j = 0; j < 16; j++) {
+
+                            let nodeTmp = view.getUint32(offset, true);
+                            offset += 4;
+
+                            let nameStr = "";
+                            if(nameLength > 0)
+                            {
+                                let nameBuffer = new Uint8Array(nameLength);
+                                for (let j = 0; j < nameLength; j++) {
+                                    nameBuffer[j] = view.getUint8(offset + j, true);
+                                }
+                                offset += nameLength;
+                                nameStr = String.fromCharCode.apply(null, nameBuffer);
+                                
+                                try {
+                                    // UTF-8
+                                    nameStr = decode_utf8(nameStr);
+                                } catch (e) {
+                                    console.log(e);
+                                }
+                                HeaderTocTableItem.name = nameStr.replace(/\0/gi, '');
+                            }
+                            else 
+                                HeaderTocTableItem.name = nameStr;
+                            
+
+                            
+                            for (let j = 0; j < 6; j++) {
+                                HeaderTocTableItem.bBox[j] = view.getFloat32(offset, true);
+                                offset += 4;
+                            }
+
+                            for (let j = 0; j < 16; j++) {
                                 HeaderTocTableItem.transfrom[j] = view.getFloat32(offset, true);
                                 offset += 4;
                             }
-                            HeaderTocTableItem.bBox = [];
-                            for (var k = 0; k < 6; k++) {
-                                HeaderTocTableItem.bBox[k] = view.getFloat32(offset, true);
-                                offset += 4;
-                            }
 
-                            HeaderTocTableItem.cCount = view.getInt32(offset, true);
-                            offset += 4;
-                            var pIndex = view.getInt32(offset, true);
+                            HeaderTocTableItem.orgNodeID = index;
                             HeaderTocTableItem.pIndex = pIndex === -1 ? pIndex : pIndex + datamng.GetMaxID();
-                            offset += 4;
-                            HeaderTocTableItem.orgNodeID = view.getInt32(offset, true);
-                            offset += 4;
-                            //byte * pNameBuff;
-                            if (header.version < 302)
-                                offset += 8;
+                            HeaderTocTableItem.index = index === -1 ? index : index + datamng.GetMaxID();
 
-                            HeaderTocTableItem.tocId = view.getInt32(offset, true); //Binary Block용 
-                            offset += 4;
-                            HeaderTocTableItem.btype = view.getInt32(offset, true);//Binary Block용 
+                            let propNum = view.getUint32(offset, true);
                             offset += 4;
 
-                            if (HeaderTocTableItem.type === ENTITY_TYPES.EntBinaryBlock) {
-                                if(HeaderTocTableItem.btype === 11)
-                                    reviews.push(HeaderTocTableItem);
+                            if(propNum > 0)
+                            {
+                                let propList = []
+                                for (let j = 0; j < propNum; j++) {
+                                    propList[j] = view.getUint32(offset, true);
+                                    offset += 4;
+                                }
+                            
+                                m_mapPropList.set(HeaderTocTableItem.index, propList);
+                            }   
+
+                            let meshNum = view.getUint32(offset, true);
+                            offset += 4;
+
+                            if(meshNum > 0)
+                            {
+                                let meshList = []
+                                for (let j = 0; j < meshNum; j++) {
+                                    meshList[j] = view.getUint32(offset, true);
+                                    offset += 4;
+                                }
+                            
+                                m_mapMeshList.set(HeaderTocTableItem.index, meshList);
+                            }   
+
+                            let childNum = view.getUint32(offset, true);
+                            offset += 4;
+
+                            if(childNum > 0)
+                            {
+                                let childList = []
+                                for (let j = 0; j < childNum; j++) {
+                                    childList[j] = view.getUint32(offset, true);
+                                    offset += 4;
+                                }                                                                
                             }
-
-                            // add
-                            if (HeaderTocTableItem.type !== ENTITY_TYPES.EntAssembly
-                                && HeaderTocTableItem.type !== ENTITY_TYPES.EntPart
-                                && HeaderTocTableItem.type !== ENTITY_TYPES.EntBody) {
-                                nEnts--;
-                                continue;
-                            }
+                            
+                            HeaderTocTableItem.cCount = childNum;
+                            
+                            if(nodeType === 0)
+                                HeaderTocTableItem.type = ENTITY_TYPES.EntAssembly;
+                            else if(nodeType === 1)
+                                HeaderTocTableItem.type = ENTITY_TYPES.EntPart;
+                            else if(nodeType === 2)
+                                HeaderTocTableItem.type = ENTITY_TYPES.EntBody;
+                            else if(nodeType === 3)
+                                HeaderTocTableItem.type = ENTITY_TYPES.EntPart;
                             
 
                             m_vecPropHeaderDic.push(HeaderTocTableItem);
                         }
-
                         datamng.AddNodes(m_vecPropHeaderDic);
-                        
 
+                        let ImportProperty = function (view, offset) {
 
-                        // NodeName
-                        var nNameNum = view.getInt32(offset, true);
-                        offset += 4;
-                        var decode_utf8 = function (s) {
-                            return decodeURIComponent(escape(s));
-                        };
-                        var m_vecPropNodeNameDic = [];
-                        var pos = 0;
-                        for (var l = 0; l < nEnts; l++) {
-                            if (m_vecPropHeaderDic[l].iNameIndex <= 0)
-                                continue;
-
-                            var NameTocTableItem = {
-                                nStringNum: 0,
-                                pos: 0,
-                                name: null
+                            var decode_utf8 = function (s) {
+                                return decodeURIComponent(escape(s));
                             };
 
-                            NameTocTableItem.pos = pos;
-                            NameTocTableItem.nStringNum = m_vecPropHeaderDic[l].iNameIndex;
-
-                            var bodyNameBuffer = new Uint8Array(NameTocTableItem.nStringNum);
-                            for (var m = 0; m < NameTocTableItem.nStringNum; m++) {
-                                // Multibyte
-                                //if(m%2 ===0)
-                                //    bodyNameBuffer[m/2] = view.getUint8(pos + offset + m, true);
-                                bodyNameBuffer[m] = view.getUint8(pos + offset + m, true);
-                            }
-
-                            bodyName = String.fromCharCode.apply(null, bodyNameBuffer);
-                            try {
-                                // UTF-8
-                                bodyName = decode_utf8(bodyName);
-                            } catch (e) {
-                                console.log(e);
-                            }
-
-                            //[정규식 이용해서 gi 로 감싸기]
-                            //감싼 따옴표를 슬래시로 대체하고 뒤에 gi 를 붙이면 
-                            //replaceAll 과 같은 결과를 볼 수 있다.
-                            //* g : 발생할 모든 pattern에 대한 전역 검색
-                            //* i : 대 / 소문자 구분 안함
-                            //* m: 여러 줄 검색(참고)
-
-                            m_vecPropHeaderDic[l].name = bodyName.replace(/\0/gi,'');
-                            NameTocTableItem.name = bodyName.replace(/\0/gi, '');
-                            pos += m_vecPropHeaderDic[l].iNameIndex;
-                            
-                            m_vecPropNodeNameDic.push(NameTocTableItem);
-                        }
-
-                        offset += nNameNum;
-
-                        var LoadProperty = function () {
-
-                            // Property
-                            var vdBodyBlockSize = view.getUint32(offset, true);
+                            let propertyCnt = view.getUint32(offset, true);
                             offset += 4;
+        
+                            let readPropertyData = new Map();
+                            for (let i = 0; i < propertyCnt; i++) {
 
-                            for (var pb = 0; pb < vdBlockSize; pb++) {
-                                var BodyTocTableItem = {
-                                    nodeTreeOrderID: -1,
-                                    hasColor: false,
-                                    color: [],
-                                    cacheidx: -1,
-                                    hasLayerNumber: false,
-                                    layerNum: -1,
-                                    attrCount: -1,
-                                    attrType: [],
-                                    volume: 0,       //volume 
-                                    area: 0,         //Area
-                                    centroid: [],  //centroid (center of gravity)
-                                    desbyteLength: -1,
-                                    fdensity: -1,
-                                    edgeStartidx: -1,
-                                    edgeIdxNum: -1,
-                                };
-                                BodyTocTableItem.nodeTreeOrderID = view.getInt32(offset, true);
+                                let id = view.getUint32(offset, true);
                                 offset += 4;
-                                BodyTocTableItem.hasColor = view.getUint8(offset, true);
+
+                                let propNum = view.getUint32(offset, true);
                                 offset += 4;
-                                for (var i = 0; i < 4; i++) {
-                                    BodyTocTableItem.color[i] = view.getFloat32(offset, true);
-                                    offset += 4;
-                                }
-                                
-                                BodyTocTableItem.cacheidx = view.getInt32(offset, true);
-                                offset += 4;
-                                BodyTocTableItem.hasLayerNumber = view.getUint8(offset, true);
-                                offset += 4;
-                                BodyTocTableItem.layerNum = view.getInt32(offset, true);
-                                offset += 4;
-                                BodyTocTableItem.attrCount = view.getInt32(offset, true);
-                                offset += 4;
-                                for (var i = 0; i < 2; i++) {
-                                    BodyTocTableItem.attrType[i] = view.getInt32(offset, true);
-                                    offset += 4;
-                                }
-                                BodyTocTableItem.volume = getUint64(view, offset, true);//view.getInt32(offset, true);
-                                offset += 8;
-                                BodyTocTableItem.area = getUint64(view, offset, true);//view.getInt32(offset, true);
-                                offset += 8;
-                                for (var i = 0; i < 3; i++) { //centroid (center of gravity)
-                                    BodyTocTableItem.centroid[i] = getUint64(view, offset, true);//view.getInt32(offset, true);
-                                    offset += 8;
-                                }
-                                BodyTocTableItem.desbyteLength = view.getInt32(offset, true);
-                                offset += 4;
-                                BodyTocTableItem.fdensity = view.getInt32(offset, true);
-                                offset += 4;
-                                BodyTocTableItem.edgeStartidx = view.getInt32(offset, true);
-                                offset += 4;
-                                BodyTocTableItem.edgeIdxNum = view.getInt32(offset, true);
-                                offset += 4;
-                            }
-                        };
 
-                        //LoadProperty();
-                    }
-
-                    // 리뷰정보 바인딩
-                    function ImportReview() {
-
-                    };
-
-                    //console.log(reviews);
-                    // Review 추가
-                    function readAxis(viewAxis) {
-                  
-
-                        let offset = 0;
-                        let nSize = viewAxis.getInt32(offset, true);
-                        offset += 4;
-                        for (let i = 0; i < nSize; i++) {
-
-                            let bShow = viewAxis.getInt8(offset, true);
-                            offset += 1;
-                            //let vtArray = new Float32Array(viewAxis.buffer, offset + viewAxis.byteOffset, 16);
-                            //offset += 4 * 16;
-                            let vtArray = [];
-                            for (let j = 0; j <16 ; j++) {
-                                let vt = viewAxis.getFloat32(offset, true);
-                                vtArray.push(vt);
-                                offset += 4;
-                            }
-                            let len = viewAxis.getInt32(offset, true);
-                            offset += 4;
-                            let nameBuffer = new Uint8Array(viewAxis.buffer, viewAxis.byteOffset + offset, len);
-                            let name = String.fromCharCode.apply(null, nameBuffer);
-                            try {
-                                name = decode_utf8(name);
-                            } catch (e) {
-                            }
-                            offset += len;
-                     
-                            let axis = datamng.GetParent().AdditionalReview.Item_Axis();
-                            axis.visible = bShow;
-                            axis.matrix.elements = vtArray;
-                            axis.name = name;
-                            datamng.GetParent().AdditionalReview.AddAxis(axis);
-                        }
-                      
-                    }
-
-                    var tiAxis = FindLast(ContentsType.CTVIZWFileAxisInfo);
-                    if (tiAxis !== -1) {
-                        var tocAxis = m_toc[tiAxis];
-                        if (tocAxis !== undefined) {
-                            var viewAxis = ReadDataBlock(tocAxis);
-                            readAxis(viewAxis);
-                        }
-                    }
-                    
-
-                    function readEdge(viewEdge) {
-
-                    
-                        let offset = 0;
-                        let nSize = viewEdge.getInt32(offset, true);
-                        offset += 4;
-                        for (let i = 0; i < nSize; i++) {
-                            let bodyId = viewEdge.getInt32(offset, true);
-                            offset += 4;
-                            let nType = viewEdge.getInt32(offset, true);
-                            offset += 4;
-                            // 11 Curve
-                            // 10 Point
-                            let nItem = viewEdge.getInt32(offset, true);
-                            offset += 4;
-                            let vtArray = [];
-                            for (let j = 0; j < nItem; j++) {
-                                let vt = viewEdge.getFloat32(offset, true);
-                                vtArray.push(vt);
-                                offset += 4;
-                            }
-                            let colArray = [];
-                            for (let j = 0; j < 4; j++) {
-                                let vt = viewEdge.getFloat32(offset, true);
-                                colArray.push(vt);
-                                offset += 4;
-                            }
-
-                            let edge = datamng.GetParent().AdditionalReview.Item_Edge();
-                            edge.visible = true;
-                            edge.nType = nType;
-                            edge.vtArray = vtArray;
-                            edge.color = colArray;
-                            
-                            datamng.GetParent().AdditionalReview.AddEdge(edge);
-                            
-                        }
-
-                    }
-
-                    var tiEdge = FindLast(ContentsType.CTVIZWFileFreeEdgeInfo);
-                    if (tiEdge !== -1) {
-                        var tocEdge = m_toc[tiEdge];
-                        if (tocEdge !== undefined) {
-                            var viewEdge = ReadDataBlock(tocEdge);
-                            readEdge(viewEdge);
-                        }
-                    }
-
-                    // Property
-                    var tiPropertyIndices = FindLast(ContentsType.CTNodePropTableIndices);
-                    var tocPropertyIndices = m_toc[tiPropertyIndices];
-                    //if (tocPropertyIndices === undefined) {
-                    //    setTimeout(function () {
-                    //        parseOnload(group, data);
-                    //    }, 25);
-                    //    return;
-                    //}
-                    var viewPropertyIndices = ReadDataBlock(tocPropertyIndices);
-                    //setTimeout(function () { LoadPropTableIndices(viewPropertyIndices, tocPropertyIndices); }, 25);
-                    function LoadPropTableIndices(view, toc) {
-                        var offsetIndices = 0;
-                        var nTables = view.getUint32(offsetIndices, true);
-                        offsetIndices += 4;
-
-                        var m_nodePropTables = [];
-
-                        for (var p = 0; p < nTables; p++) {
-                            var tidx = view.getUint32(offsetIndices, true);
-                            offsetIndices += 4;
-
-                            var PropTocTableItem = {
-                                tableTocIdx: tidx,
-                                nLoadedNodes: 0
-                            };
-
-                            m_nodePropTables.push(PropTocTableItem);
-                        }
-
-                        for (var pi = 0; pi < m_nodePropTables.length; pi++) {
-                            var pti = m_nodePropTables[pi];
-                            var tocProperty = m_toc[pti.tableTocIdx];
-                            if (tocProperty === undefined) {
-                                setTimeout(function () {
-                                    parseOnload(group, data);
-                                }, 25);
-                                return;
-                            }
-                            else {
-                                var viewProperty = ReadDataBlock(tocProperty, view.buffer);
-                                LoadPropTableItem(viewProperty, tocProperty, pti);
-                            }
-                        }
-
-                        function LoadPropTableItem(view, toc, pti) {
-                            var offset = 0;
-                            var nNodesPerTable = view.getUint32(offset, true);
-                            offset += 4;
-                            if (pti.nLoadedNodes === nNodesPerTable)
-                                return false;
-                            var arrProperty = [];
-                            for (var i = 0; i < nNodesPerTable; i++) {
-                                var Property = {
-                                    nodeId: -1,
-                                    nNodeProps: 0,
-                                    items : []
-                                };
-                                arrProperty.push(Property);
-
-                                Property.nodeId = view.getUint32(offset, true);
-                                Property.nodeId += datamng.GetStartID();
-                                offset += 4;
-                                Property.nNodeProps = view.getInt16(offset, true);
-                                offset += 2;
-
-                                var encode_utf8 = function (s) {
-                                    return unescape(encodeURIComponent(s));
-                                };
-
-                                var decode_utf8 = function (s) {
-                                    return decodeURIComponent(escape(s));
-                                };
-
-                                for (var pi = 0; pi < Property.nNodeProps; pi++) {
+                                let items = [];
+                                for (let k = 0; k < propNum; k++) {
                                     var item = {
                                         key: null,
                                         value: null,
                                         valueType: null
                                     };
-                                    var len = view.getUint32(offset, true);
+
+                                    let keyLen = view.getUint32(offset, true);
+                                    offset += 4;
+                                    
+                                    let keyTmp = view.getUint32(offset, true);
                                     offset += 4;
 
-                                    var keyBuffer = new Uint8Array(len);
-                                    for (var m = 0; m < len; m++) {
+                                    var keyBuffer = new Uint8Array(keyLen);
+                                    for (var m = 0; m < keyLen; m++) {
                                         keyBuffer[m] = view.getUint8(offset + m, true);
                                     }
-
+                                    offset += keyLen;
                                     item.key = String.fromCharCode.apply(null, keyBuffer);
                                     try {
                                         item.key = decode_utf8(item.key);
-                                        //item.key = decode_utf8(window.atob(item.key));
                                     } catch (e) {
                                     }
-                                    
-                                    offset += len;
 
-                                    len = view.getUint16(offset, true);
-                                    offset += 2;
-
-                                    len = view.getUint32(offset, true);
+                                    let valueLen = view.getUint32(offset, true);
                                     offset += 4;
 
-                                    var valueBuffer = new Uint8Array(len);
-                                    for (var m = 0; m < len; m++) {
+                                    let valueTmp = view.getUint32(offset, true);
+                                    offset += 4;
+
+                                    var valueBuffer = new Uint8Array(valueLen);
+                                    for (var m = 0; m < keyLen; m++) {
                                         valueBuffer[m] = view.getUint8(offset + m, true);
                                     }
+                                    offset += valueLen;
                                     item.value = String.fromCharCode.apply(null, valueBuffer);
                                     try {
                                         item.value = decode_utf8(item.value);
-                                        //item.value = decode_utf8(window.atob(item.value));
                                     } catch (e) {
                                     }
                                     
-                                    offset += len;
-
-                                    item.valType = view.getUint16(offset, true);
+                                    item.valueType = view.getUint16(offset, true);
                                     offset += 2;
 
-                                    Property.items.push(item);
+                                    items.push(item);
                                 }
-                            }
 
+                                readPropertyData.set(id, items);
+                            }
+                            
+                            let arrProperty = [];
+                            m_mapPropList.forEach((propList, key) => {
+
+                                var Property = {
+                                    nodeId: -1,
+                                    nNodeProps: 0,
+                                    items : []
+                                };
+                                Property.nodeId = key;
+                                for(let i = 0 ; i < propList.length ; i++)
+                                {
+                                    if(!readPropertyData.has(propList[i])) continue;
+
+                                    const items = readPropertyData.get(propList[i]);
+
+                                    for(let k = 0 ; k < items.length ; k++)
+                                        Property.items.push(items[k]);
+                                }
+
+                                Property.nNodeProps = Property.items.length;
+                                if(Property.nNodeProps > 0)
+                                    arrProperty.push(Property);
+
+                            });
                             datamng.AddUserProperty(arrProperty);
 
-                            // ID 재조정
-                            datamng.ResetID();
+                            return offset;
+                        };
 
-                            setTimeout(function () {
-                                parseOnload(group, data);
-                            }, 25);
+                        offset = ImportProperty(view, offset);
+
+                        
+                        function ImportMeshBlock(view, offset)
+                        {
+                            let meshCnt = view.getUint32(offset, true);
+                            offset += 4;
+
+                            let meshDataList = new Map();
+                            let geometryDataList = new Map();
+                            for(let mi = 0 ; mi < meshCnt ; mi++)
+                            {
+                                let id = view.getUint32(offset, true);
+                                offset += 4;
+
+                                let colorR = view.getFloat32(offset, true);
+                                offset += 4;
+                                let colorG = view.getFloat32(offset, true);
+                                offset += 4;
+                                let colorB = view.getFloat32(offset, true);
+                                offset += 4;
+                                let colorA = view.getFloat32(offset, true);
+                                offset += 4;
+
+                                let color = {
+                                    R: parseInt(colorR * 255),
+                                    G: parseInt(colorG * 255),
+                                    B: parseInt(colorB * 255),
+                                    A: parseInt(colorA * 255)
+                                };
+
+                                let vnSize = view.getUint32(offset, true);
+                                offset += 4;
+
+                                let triSize = view.getUint32(offset, true);
+                                offset += 4;
+
+                                // let vtArray = new Float32Array(view, offset, vnSize * 3);
+                                // offset += vnSize * 4 * 3;
+
+                                // let vnArray = new Float32Array(view, offset, vnSize * 3);
+                                // offset += vnSize * 4 * 3;
+
+                                // let triArray = new Uint32Array(view, offset, triSize);
+                                // offset += triSize * 4;
+
+                                let vtArray = new Float32Array(vnSize * 3);
+                                for (let j = 0; j < vnSize * 3; j++) {
+                                    vtArray[j] = view.getFloat32(offset, true);
+                                    offset += 4;
+                                }
+
+                                let vnArray = new Float32Array(vnSize * 3);
+                                for (let j = 0; j < vnSize * 3; j++) {
+                                    vnArray[j] = view.getFloat32(offset, true);
+                                    offset += 4;
+                                }
+
+                                let triArray = undefined;
+                                
+                                if(false)
+                                {
+                                    triArray = new Uint32Array(triSize);
+                                    for (let j = 0; j < triSize; j++) {
+                                        triArray[j] = view.getUint32(offset, true);
+                                        offset += 4;
+                                    }
+                                }
+                                else 
+                                {                            
+                                    triArray = new Uint16Array(triSize);
+                                    for (let j = 0; j < triSize; j++) {
+                                        triArray[j] = view.getUint16(offset, true);
+                                        offset += 2;
+                                    }
+        
+                                }
+
+
+
+                                meshDataList.set(id, {
+                                    color : color,
+                                    vnSize : vnSize,
+                                    triSize : triSize
+                                });
+
+
+                                let geometry = new THREE.BufferGeometry();
+                                geometry.setIndex(new THREE.Uint32BufferAttribute(triArray, 1));
+                                geometry.addAttribute('position', new THREE.Float32BufferAttribute(vtArray, 3));
+                                geometry.addAttribute('normal', new THREE.Float32BufferAttribute(vnArray, 3));
+
+                                let colorNum  = vtArray.length / 3 * 4;
+                                let colors = [];
+                                for (let k = 0; k < colorNum; k = k + 4) {
+
+                                    colors.push(color.R);
+                                    colors.push(color.G);
+                                    colors.push(color.B);
+                                    colors.push(color.A);
+                                }
+                                let colorAttribute = new THREE.Uint8BufferAttribute(colors, 4);
+                                colorAttribute.normalized = true;
+                                geometry.addAttribute('color', colorAttribute);
+                                geometry.computeBoundingSphere();
+
+                                
+                                mesh = new THREE.Mesh(geometry, datamng.Materials.basic);
+                                mesh.castShadow = true;
+                                mesh.receiveShadow = true;
+                                
+                                geometryDataList.set(id, mesh);
+                                object.add(mesh);
+                            }
+
+                            
+                            m_mapMeshList.forEach((meshList, key) => {
+                                
+                                let item = m_vecPropHeaderDic.find((item) => {
+                                    return item.index == key;
+                                });
+
+                                if(item === undefined) return;
+                                
+                                for(let i = 0 ; i < meshList.length ; i++)
+                                {
+                                    let meshData = meshDataList.get(meshList[i]);
+                                    if(meshData === undefined) continue;
+
+                                    const geometryData = geometryDataList.get(meshList[i]);
+
+                                    // color : color,
+                                    // vnSize : vnSize,
+                                    // triSize : triSize
+                                    var data = {
+                                        partId: item.pIndex,
+                                        bodyId: item.index,
+                                        color: meshData.color,
+                                        
+                                        // m_vnIdx: m_vnIdx * 3,
+                                        // m_triIdx: m_triIdx * 3,
+                                        // m_nVtx: MnVtx * 3,
+                                        // m_nTris: MnTri * 3,
+
+                                        m_vnIdx: 0,
+                                        m_triIdx: 0,
+                                        m_nVtx: meshData.vnSize * 3,
+                                        m_nTris: meshData.triSize * 3,
+                                        
+                                        BBox: {
+                                            min: {
+                                                x: item.bBox[0],
+                                                y: item.bBox[1],
+                                                z: item.bBox[2]
+                                            },
+                                            max: {
+                                                x: item.bBox[3],
+                                                y: item.bBox[4],
+                                                z: item.bBox[5]
+                                            }
+                                        },
+                                        Tag: datamng.Tag()
+                                        //mesh: mesh
+                                    };
+
+                                    if(geometryData.userData.length === undefined)
+                                        geometryData.userData = [ data ];
+                                    else 
+                                        geometryData.userData.push(data);
+                                }
+                            });
+                            
+                            
+                            
+        
                         }
+                        offset = ImportMeshBlock(view, offset);
+
+
+                        return offset;
                     }
 
-                    if (tocData === undefined) {
+                    offset = ImportStructure(dataView, offset);
+
+
+
+                    if (true) {
                         onProgress(1, 1);
                         result = null;
 
-                        if (tocStructure === undefined) {
-                            setTimeout(function () {
-                                parseOnload(group, data);
-                            }, 25);
-                        }
-                        else {
-                            setTimeout(function () {
-                                ImportStructure(viewStructure, tocStructure);
-
-                                console.log(reviews);
-
-                                if (tocPropertyIndices === undefined) {
-                                    setTimeout(function () {
-                                        parseOnload(group, data);
-                                    }, 25);
-                                }
-                                else {
-                                    setTimeout(function () {
-                                        LoadPropTableIndices(viewPropertyIndices, tocPropertyIndices);
-                                    }, 25);
-                                }
-
-                            }, 25);
-                        }
-                    }
-                    else {
-                        var view = ReadDataBlock(tocData);
-
-                        offset = 0;
-                        var meshBlockNum = view.getInt32(offset, true);
-                        offset += 4;
-
-                        var curload = 0;
-                        var loading = function () {
-                            for (var i = curload; i < meshBlockNum; i++) {
-                                var percent = curload / meshBlockNum;
-                                if (percent === Infinity)
-                                    percent = 0;
-                                //onProgress(1, percent);
-                                console.log("ReadMeshBlock : " + i);
-                                var cachTocIdx = 0;
-                                cachTocIdx = view.getInt32(offset, true);
-                                offset += 4;
-
-                                //var tocIdx = FindToc(ContentsType.CTMeshBlockSub, cachTocIdx);//FindLast(22);
-                                //toc = m_toc[tocIdx];
-                                toc = m_toc[cachTocIdx];
-                                //toc = FindTocItem(cachTocIdx);
-
-                                var viewSub = ReadDataBlock(toc);
-
-                                ImportMeshBlock(viewSub, cachTocIdx);
-                                //ImportMeshBlock_body(viewSub, cachTocIdx);
-                                curload++;
-                                if (curload !== meshBlockNum) {
-                                    setTimeout(function () {
-                                        onProgress(1, percent);
-                                        loading();
-                                    }, 25);
-                                    break;
-                                }
-                                else {
-                                    setTimeout(function () {
-                                        onProgress(1, 1);
-                                        result = null;
-
-                                        if (tocStructure === undefined) {
-                                            setTimeout(function () {
-                                                parseOnload(group, data);
-                                            }, 25);
-                                        }
-                                        else {
-                                            setTimeout(function () {
-                                                ImportStructure(viewStructure, tocStructure);
-
-                                                if (tocPropertyIndices === undefined) {
-                                                    setTimeout(function () {
-                                                        parseOnload(group, data);
-                                                    }, 25);
-                                                }
-                                                else {
-                                                    setTimeout(function () {
-                                                        LoadPropTableIndices(viewPropertyIndices, tocPropertyIndices);
-                                                    }, 25);
-                                                }
-
-                                            }, 25);
-                                        }
-                                    }, 25);
-                                }
-                            }
-                        };
-
                         setTimeout(function () {
-                            onProgress(1, 0);
-                            loading();
+                            parseOnload(group, data);
                         }, 25);
+
                     }
                 }
 
@@ -1392,11 +763,6 @@ define(
                         },
                         url: data.Url,
                         type: "GET",
-                        //xhrFields: {  //response 데이터를 바이너리로 처리한다.
-                        //    //dataType: 'binary'
-                        //    //responseType: 'arraybuffer'
-                        //    //responseType: 'blob'
-                        //},
                         beforeSend: function () {  //ajax 호출전 progress 초기화
                             onProgress(0, 0, 0, 0);
                         },
@@ -1455,56 +821,13 @@ define(
                         }
                     });
                 }
-                function down_Zip() {
-                    //let zip_url = 'http://localhost/a.zip';
-                    //let zip_url = 'http://localhost/VIZWeb3D/VIZWeb3D/MODEL/300p_desk_chair_assy_v303_ul_noEdge.zip';
-                    //let zip_url = 'http://localhost/VIZWeb3D/VIZWeb3D/MODEL/300p_desk_chair_assy_v303_ul_nohide.zip';
-                    //let zip_url = 'http://localhost/VIZWeb3D/VIZWeb3D/MODEL/900p_desk_chair_assy_v303_ul_nohide.zip';
-                    onProgress(0, 0, 0, 0);
-                    let promise = new JSZip.external.Promise(function (resolve, reject) {
-                        JSZipUtils.getBinaryContent(zip_url, function (err, data) {
-                            if (err) {
-                                reject(err);
-                            } else {
-                                console.log("File Downloading Finish");
-                                resolve(data);
-                            }
-                        });
-                    });
-                    promise.then(JSZip.loadAsync).then(
-                        function (zip) {
-                            console.log("File Uncompress Start");
-                            zip.forEach(function (fileName) {
-                                let file = zip.file(fileName);
-                                // 압축 파일 안에 저장된 파일이 압축이 풀리고 ArrayBuffer 타입으로 전달됨
-                                file.async("arraybuffer", function updateCallback(metadata){
-                                    console.log("progression: " + metadata.percent.toFixed(0) + " %");
-                                    var percent = metadata.percent.toFixed(2) / 100;
-                                    onProgress(0, percent, percent, 100);
-
-                                }).then(
-                                    function success(buf) {
-                                        //alert(fileName);
-                                        console.log("File Uncompress Finish");
-                                        asyncParse(buf);
-                                        //result.slice(0, result.length);
-                                        result = null;
-                                    },
-                                    function error(e) {
-                                        // 에러가 나셨습니다.
-                                        alert("error");
-                                    }
-                                );
-                            });
-                        }
-                    );
-                }
+               
                 //if (browser.Name.localeCompare("Chrome") === 0)
                 if (browser.Type === BROWSER_TYPES.Edge
                     || browser.Type === BROWSER_TYPES.Internet_Explorer)
                     down_Edge();
                 else
-                    down();//down_Zip();//down();
+                    down();
 
             },
         };
